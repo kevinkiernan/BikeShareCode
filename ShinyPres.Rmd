@@ -1,0 +1,61 @@
+---
+title: "BikeShare Project"
+##"Why Do People Ride the Capital BikeShare?"
+author: "Kevin Kiernan, Eric Christiansen, Ruijia Yang"
+date: "12/5/2019"
+output: ioslides_presentation
+runtime: shiny
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+library(ggplot2)
+library(shiny)
+```
+
+## Ride Distance and Duration Tell Us?
+```{r}
+load("TripLengthData.rds")
+
+mode_bin<-which(total_counts$total_counts==max(total_counts$total_counts))
+median_bin<-mean(monthly_counts$Duration.Median)
+
+full.hist<-ggplot(total_counts,aes(x=bins,y=total_counts))+
+  geom_bar(stat='identity',color="blue",fill="light blue")+
+  geom_vline(xintercept=mode_bin, linetype="dotted", color="black", size=0.75)+
+  geom_vline(xintercept=median_bin, linetype="dotted", color="black", size=0.75)+
+  annotate(geom="text", x=5, y=1800000, label="Modal Ride= 5-6 Minutes",color="dark red",hjust=-0.01)+
+  annotate(geom="text", x=11, y=1200000, label="Median Ride= 11 Minutes",color="Blue",hjust=-0.01)+
+  labs(title="The Modal Ride Lasts 5-6 Minutes",
+       subtitle="Rideshare Data from 2010-2019",
+       y="Count",
+       x="Ride Duration in Minutes")+
+  ylim(0,2000000)+
+  theme_light()
+renderPlot(full.hist)
+```
+
+##What Directions Do People Ride?
+```{r}
+
+```
+
+##Stock Viz
+```{r eruptions}
+inputPanel(
+  selectInput("n_breaks", label = "Number of bins:",
+              choices = c(10, 20, 35, 50), selected = 20),
+  
+  sliderInput("bw_adjust", label = "Bandwidth adjustment:",
+              min = 0.2, max = 2, value = 1, step = 0.2)
+)
+
+renderPlot({
+  hist(faithful$eruptions, probability = TRUE, breaks = as.numeric(input$n_breaks),
+       xlab = "Duration (minutes)", main = "Geyser eruption duration")
+  
+  dens <- density(faithful$eruptions, adjust = input$bw_adjust)
+  lines(dens, col = "blue")
+})
+```
+
