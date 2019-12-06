@@ -1,24 +1,15 @@
 ##bearings
 
-library(lubridate)
-library(fossil)
-library(dplyr)
-
-load(paste0('Data/Month Data/',list.files(path = './Data/Month Data')[10]))
-
-
-
-locations <- read.csv('Data/Capital_Bike_Share_Locations.csv', header = TRUE)
-
-stationlocations <- select(locations, TERMINAL_NUMBER, LATITUDE, LONGITUDE)
-
-
-
-bikebearing <- function(bdata, round = TRUE){
+bikebearing <- function(bdata, round = TRUE, samestation = TRUE, output = c("vector", "plot")){
   
   library(fossil)
+  library(dplyr)
   
   b <- bdata
+  
+  if(samestation == FALSE){
+    b <- filter(b, Start.station.number != End.station.number)
+  }
   
   ##add coordinate data based on station location data
   b$Start_lat <- stationlocations[match(b$Start.station.number, stationlocations$TERMINAL_NUMBER), "LATITUDE"]
@@ -31,31 +22,31 @@ bikebearing <- function(bdata, round = TRUE){
   #calculate bearings
   bearings <- mapply(earth.bear,b$Start_long, b$Start_lat, b$End_long, b$End_lat)
   
+  #round to nearest int if specified
   if (round == TRUE) {
-    return(round(bearings,0))
-  }
-  else {
-    return (bearings)
+    bearings <- round(bearings,0)
   }
   
+  
+  #return either vector or radar plot
+  if (output == "vector"){
+    return(bearings)
+  } else if (output == "plot"){
+    
+    library(ggplot2)
+    
+    
+    plotdat <- as.data.frame(table(bearings))
+    plotdat$bearings <- as.factor(plotdat$bearings)
+    
+    g <- ggplot(plotdat, aes(x = bearings, y = Freq, group = 1)) +
+      geom_polygon() + coord_polar() + theme_bw() + scale_x_discrete(breaks = c(0, 90, 180, 270)) +
+      scale_y_continuous(labels = scales::comma)+
+      labs(x = "", y = "Count of Rides")
+    
+    return(g)
+    
+  }
+  
+  
 }
-
-
-library(plyr)
-
-
-
-dd <- bikebearing(x)
-
-melt(plotdat, id.vars = dd)
-
-plotdat <- as.data.frame(table(dd))
-plotdat2 <- rbind(plotdat, rep(0, 7288), rep(360, 7288))
-
-
-
-
-###MAKE A RADAR PLOT
-library(fmsb)
-
-radarchart(plotdat)
