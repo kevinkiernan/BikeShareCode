@@ -13,17 +13,20 @@ library(ggplot2)
 library(shiny)
 ```
 
-## Ride Distance and Duration Tell Us?
+## Ride Duration
 ```{r}
-load("TripLengthData.rds")
+load("TripDurationData.rds")
+monthly_counts_duration<-monthly_counts
+total_counts_duration<-total_counts
 
-mode_bin<-which(total_counts$total_counts==max(total_counts$total_counts))
-median_bin<-mean(monthly_counts$Duration.Median)
+mode_bin_duration<-which(total_counts_duration$total_counts==max(total_counts_duration$total_counts))
+median_bin_duration<-mean(monthly_counts_duration$Duration.Median)
 
-full.hist<-ggplot(total_counts,aes(x=bins,y=total_counts))+
+#Histogram for duration
+full.duration.hist<-ggplot(total_counts_duration,aes(x=bins,y=total_counts))+
   geom_bar(stat='identity',color="blue",fill="light blue")+
-  geom_vline(xintercept=mode_bin, linetype="dotted", color="black", size=0.75)+
-  geom_vline(xintercept=median_bin, linetype="dotted", color="black", size=0.75)+
+  geom_vline(xintercept=mode_bin_duration, linetype="dotted", color="black", size=0.75)+
+  geom_vline(xintercept=median_bin_duration, linetype="dotted", color="black", size=0.75)+
   annotate(geom="text", x=5, y=1800000, label="Modal Ride= 5-6 Minutes",color="dark red",hjust=-0.01)+
   annotate(geom="text", x=11, y=1200000, label="Median Ride= 11 Minutes",color="Blue",hjust=-0.01)+
   labs(title="The Modal Ride Lasts 5-6 Minutes",
@@ -32,12 +35,56 @@ full.hist<-ggplot(total_counts,aes(x=bins,y=total_counts))+
        x="Ride Duration in Minutes")+
   ylim(0,2000000)+
   theme_light()
-renderPlot(full.hist)
+
+renderPlot(full.duration.hist)
+```
+
+## Ride Distance
+```{r}
+load("TripDistanceData.rds")
+monthly_counts_distance<-monthly_counts
+total_counts_distance<-total_counts
+
+mode_bin_distance<-which(total_counts_distance$total_counts==max(total_counts_distance$total_counts))
+median_bin_distance<-mean(monthly_counts_distance$Distance.Median)
+
+#Histogram for Distance
+full.distance.hist<-ggplot(total_counts_distance,aes(x=bins,y=total_counts))+
+  geom_bar(stat='identity',color="blue",fill="light blue")+
+  geom_vline(xintercept=total_counts_distance$bins[mode_bin_distance], linetype="dotted", color="black", size=0.75)+
+  geom_vline(xintercept=median_bin_distance, linetype="dotted", color="black", size=0.75)+
+  annotate(geom="text", x=total_counts_distance$bins[mode_bin_distance], 
+           y=5000000, label="Modal Ride= 1/2 Mile",color="dark red",hjust=-0.01)+
+  annotate(geom="text", x=median_bin_distance, 
+           y=4500000, label="Median Ride=3/4 Mile",color="Blue",hjust=-0.01)+
+  labs(title="The Modal Ride is About Half a Mile",
+       subtitle="Rideshare Data from 2010-2019",
+       y="Count",
+       x="Ride Length in Miles")+
+  xlim(-0.25,5)+
+  theme_light()
+
+renderPlot(full.distance.hist)
 ```
 
 ##What Directions Do People Ride?
+###This will be a radar chart soon
 ```{r}
+load("TripHeadingData.rds")
+monthly_counts_heading<-monthly_counts
+total_counts_heading<-total_counts
 
+#Histogram for heading
+full.heading.hist<-ggplot(total_counts_heading,aes(x=bins,y=total_counts))+
+  geom_bar(stat='identity',color="blue",fill="light blue")+
+  labs(title="Title Here",
+       subtitle="Rideshare Data from 2010-2019",
+       y="Count",
+       x="Trip Heading")+
+  xlim(0,360)+
+  theme_light()
+
+renderPlot(full.heading.hist)
 ```
 
 ##Stock Viz
