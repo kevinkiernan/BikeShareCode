@@ -3,7 +3,9 @@ title: "BikeShare Project"
 ##"Why Do People Ride the Capital BikeShare?"
 author: "Kevin Kiernan, Eric Christiansen, Ruijia Yang"
 date: "12/5/2019"
-output: ioslides_presentation
+output: 
+  ioslides_presentation:
+    widescreen: true
 runtime: shiny
 ---
 
@@ -11,7 +13,27 @@ runtime: shiny
 knitr::opts_chunk$set(echo = FALSE)
 library(ggplot2)
 library(shiny)
+library(dplyr)
+library(tidyr)
 ```
+## Ridership Since 2010
+#### People don't use this service in the winter
+```{r}
+load("RidershipData.rds")
+#monthly_counts_duration<-monthly_counts
+#total_counts_duration<-total_counts
+
+#mode_bin_duration<-which(total_counts_duration$total_counts==max(total_counts_duration$total_counts))
+#median_bin_duration<-mean(monthly_counts_duration$Duration.Median)
+ridership_long<-gather(ridership,'Member.rides','Casual.rides',key=Type,value=Count)
+#Histogram for duration
+ridership.plot<-ggplot(ridership_long,aes(x=Date,y=Count,fill=Type))+
+  geom_area()+
+  theme_light()
+
+renderPlot(ridership.plot,width=1000,height=400)
+```
+
 
 ## Ride Duration
 ```{r}
@@ -27,8 +49,8 @@ full.duration.hist<-ggplot(total_counts_duration,aes(x=bins,y=total_counts))+
   geom_bar(stat='identity',color="blue",fill="light blue")+
   geom_vline(xintercept=mode_bin_duration, linetype="dotted", color="black", size=0.75)+
   geom_vline(xintercept=median_bin_duration, linetype="dotted", color="black", size=0.75)+
-  annotate(geom="text", x=5, y=1800000, label="Modal Ride= 5-6 Minutes",color="dark red",hjust=-0.01)+
-  annotate(geom="text", x=11, y=1200000, label="Median Ride= 11 Minutes",color="Blue",hjust=-0.01)+
+  annotate(geom="text", x=5, y=1800000, label="Modal Ride= 5-6 Minutes",color="black",hjust=-0.01)+
+  annotate(geom="text", x=11, y=1200000, label="Median Ride= 11 Minutes",color="black",hjust=-0.01)+
   labs(title="The Modal Ride Lasts 5-6 Minutes",
        subtitle="Rideshare Data from 2010-2019",
        y="Count",
@@ -54,9 +76,9 @@ full.distance.hist<-ggplot(total_counts_distance,aes(x=bins,y=total_counts))+
   geom_vline(xintercept=total_counts_distance$bins[mode_bin_distance], linetype="dotted", color="black", size=0.75)+
   geom_vline(xintercept=median_bin_distance, linetype="dotted", color="black", size=0.75)+
   annotate(geom="text", x=total_counts_distance$bins[mode_bin_distance], 
-           y=5000000, label="Modal Ride= 1/2 Mile",color="dark red",hjust=-0.01)+
+           y=5000000, label="Modal Ride= 1/2 Mile",color="black",hjust=-0.01)+
   annotate(geom="text", x=median_bin_distance, 
-           y=4500000, label="Median Ride=3/4 Mile",color="Blue",hjust=-0.01)+
+           y=4500000, label="Median Ride=3/4 Mile",color="black",hjust=-0.01)+
   labs(title="The Modal Ride is About Half a Mile",
        subtitle="Rideshare Data from 2010-2019",
        y="Count",
@@ -67,7 +89,7 @@ full.distance.hist<-ggplot(total_counts_distance,aes(x=bins,y=total_counts))+
 renderPlot(full.distance.hist)
 ```
 
-## People Overwhelmingly Ride North and South
+## People Overwhelmingly Ride North-South
 ```{r}
 load("TripHeadingData.rds")
 monthly_counts_heading<-monthly_counts
