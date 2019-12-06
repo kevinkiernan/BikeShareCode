@@ -67,8 +67,7 @@ full.distance.hist<-ggplot(total_counts_distance,aes(x=bins,y=total_counts))+
 renderPlot(full.distance.hist)
 ```
 
-##What Directions Do People Ride?
-###This will be a radar chart soon
+## People Overwhelmingly Ride North and South
 ```{r}
 load("TripHeadingData.rds")
 monthly_counts_heading<-monthly_counts
@@ -77,17 +76,18 @@ total_counts_heading<-total_counts
 #Histogram for heading
 full.heading.hist<-ggplot(total_counts_heading,aes(x=bins,y=total_counts))+
   geom_bar(stat='identity',color="blue",fill="light blue")+
-  labs(title="Title Here",
-       subtitle="Rideshare Data from 2010-2019",
-       y="Count",
+  labs(subtitle="Rideshare Data from 2010-2019",
+       y="Count of Total Trips",
        x="Trip Heading")+
   xlim(0,360)+
+  ylim(0,600000)+
+  coord_polar()+
   theme_light()
 
 renderPlot(full.heading.hist)
 ```
 
-##Stock Viz
+## Stock Viz
 ```{r eruptions}
 inputPanel(
   selectInput("n_breaks", label = "Number of bins:",
