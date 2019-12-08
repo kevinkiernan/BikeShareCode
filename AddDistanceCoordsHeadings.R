@@ -1,6 +1,6 @@
 #Adds Lat/Long, Distance in Miles, and Trip Heading to data files
-wd="~/Desktop/Data Science/STAT515/BikeShare/Git"
-output_directory="~/Desktop/Data Science/STAT515/BikeShare/Processed Data/"
+overall_wd<-getwd()
+wd=paste0(overall_wd,"/","Git")
 
 library(lubridate)
 library(dplyr)
@@ -20,8 +20,8 @@ for (i in seq(1:length(filelist))){
   trip.starts<-select(monthly.data,Start.station.lat,Start.station.long)
   trip.ends<-select(monthly.data,End.station.lat,End.station.long)
   #Generate SpatialPoints objects for each trip
-  coordinates(trip.starts)<-~Start.station.lat+Start.station.long
-  coordinates(trip.ends)<-~End.station.lat+End.station.long
+  coordinates(trip.starts)<-~Start.station.long+Start.station.lat
+  coordinates(trip.ends)<-~End.station.long+End.station.lat
   
   #compute distances and headings
   monthly.data$Distance<-distGeo(trip.starts, trip.ends, a=6378137, f=1/298.257223563)/1609 #distance in miles

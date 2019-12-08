@@ -1,6 +1,7 @@
 #Takes data files and sorts by trip length into bins
 #This data will be used to calculate a histogram of trip length over time
-wd="~/Desktop/Data Science/STAT515/BikeShare/Git"
+overall_wd<-getwd()
+wd=paste0(overall_wd,"/","Git")
 output_directory="~/Desktop/Data Science/STAT515/BikeShare/Processed Data/"
 
 library(lubridate)
