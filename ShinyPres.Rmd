@@ -120,7 +120,7 @@ r_colors <- rgb(t(col2rgb(colors()) / 255))
 names(r_colors) <- colors()
 
 overall_wd<-getwd()
-station.path<-paste0(overall_wd,"/Git/","Capital_Bike_Share_Locations.csv")
+station.path<-paste0(overall_wd,"/Capital_Bike_Share_Locations.csv")
 station.data<-read.csv(file=station.path)
 station.data$TERMINAL_NUMBER<-as.factor(station.data$TERMINAL_NUMBER)
 load("tallies.rds")
@@ -138,16 +138,21 @@ station.data<-filter(station.data,TERMINAL_NUMBER %in% pick.stations)
 rm(list=c("final.tallies","usage_rank","pick.stations"))
 register_google(key="AIzaSyBwv7PRw5AE4v0DDpP10991RYli2zraFxE")
 
-DC_map<-qmap("dc",zoom=13,maptype='toner-lite', source="stamen")
+DC_map<-suppressWarnings(qmap("dc",zoom=13,maptype='toner-lite', source="stamen"))
 
-DC_map_stations<-DC_map+
+DC_map_stations<-suppressWarnings(DC_map+
   geom_point(data=station.data,aes(x=LONGITUDE,y=LATITUDE,color=Direction,size=Flux,frame=Group))+
   transition_states(Group)+
   scale_size_continuous(range = c(1, 15))
+)
 ```
 
 ## Map
-<div class="centered">
+####Still Need to make the following updates:
+####Add slider
+####Add Time Subtitle
+####Make Legends Larger
+####Add Metro Stations
 ```{r,warnings=FALSE}
 suppressWarnings(animate(DC_map_stations, width = 1000, height = 1000,fps=5))
 ```
