@@ -1,0 +1,43 @@
+---
+title: "BikeShare Project"
+##"Why Do People Ride the Capital BikeShare?"
+author: "Kevin Kiernan, Eric Christiansen, Ruijia Yang"
+date: "12/5/2019"
+output: 
+  ioslides_presentation:
+    widescreen: TRUE
+runtime: shiny
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+library(ggplot2)
+library(shiny)
+library(dplyr)
+library(tidyr)
+library(leaflet)
+library(geosphere)
+library(sp)
+library(ggmap)
+library(gganimate)
+```
+
+---
+#### People don't use this service in the winter
+```{r}
+load("RidershipData.rds")
+#monthly_counts_duration<-monthly_counts
+#total_counts_duration<-total_counts
+
+#mode_bin_duration<-which(total_counts_duration$total_counts==max(total_counts_duration$total_counts))
+#median_bin_duration<-mean(monthly_counts_duration$Duration.Median)
+ridership_long<-gather(ridership,'Member.rides','Casual.rides',key=Type,value=Count)
+#Histogram for duration
+ridership.plot<-ggplot(ridership_long,aes(x=Date,y=Count,fill=Type))+
+  geom_area()+
+  theme_light()
+  
+
+renderPlot(ridership.plot,width=1000,height=500)
+```
+

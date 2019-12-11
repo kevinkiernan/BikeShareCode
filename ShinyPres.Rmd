@@ -3,9 +3,9 @@ title: "BikeShare Project"
 ##"Why Do People Ride the Capital BikeShare?"
 author: "Kevin Kiernan, Eric Christiansen, Ruijia Yang"
 date: "12/5/2019"
-output: 
-  ioslides_presentation:
-    widescreen: true
+output: html_document
+  # ioslides_presentation:
+  #   widescreen: true
 runtime: shiny
 ---
 
@@ -18,7 +18,10 @@ library(tidyr)
 library(leaflet)
 library(geosphere)
 library(sp)
+library(ggmap)
+library(gganimate)
 ```
+
 ## Ridership Since 2010
 #### People don't use this service in the winter
 ```{r}
@@ -37,8 +40,7 @@ ridership.plot<-ggplot(ridership_long,aes(x=Date,y=Count,fill=Type))+
 renderPlot(ridership.plot,width=1000,height=500)
 ```
 
-
-## Ride Duration
+### Trip Duration
 ```{r}
 load("TripDurationData.rds")
 monthly_counts_duration<-monthly_counts
@@ -64,7 +66,7 @@ full.duration.hist<-ggplot(total_counts_duration,aes(x=bins,y=total_counts))+
 renderPlot(full.duration.hist)
 ```
 
-## Ride Distance
+## Trip Distance
 ```{r}
 load("TripDistanceData.rds")
 monthly_counts_distance<-monthly_counts
@@ -109,35 +111,43 @@ full.heading.hist<-ggplot(total_counts_heading,aes(x=bins,y=total_counts))+
   coord_polar()+
   theme_light()
 
-renderPlot(full.heading.hist,width=550,height=550)
+renderPlot(full.heading.hist,width=800,height=800)
 ```
 
-## Map
-```{r}
+
+```{r,warnings=FALSE}
 r_colors <- rgb(t(col2rgb(colors()) / 255))
 names(r_colors) <- colors()
 
 overall_wd<-getwd()
 station.path<-paste0(overall_wd,"/Git/","Capital_Bike_Share_Locations.csv")
 station.data<-read.csv(file=station.path)
+station.data$TERMINAL_NUMBER<-as.factor(station.data$TERMINAL_NUMBER)
+load("tallies.rds")
+final.tallies$Station.ID<-as.factor(final.tallies$Station.ID)
+station.data<-station.data %>% merge(final.tallies,by.x="TERMINAL_NUMBER",by.y="Station.ID") %>%
+  select(TERMINAL_NUMBER,Group,LATITUDE,LONGITUDE,Total.Arrivals,Total.Departures,Flux,Total.Usage)
+station.data$Group<-as.POSIXct(station.data$Group,format="%H:%M")
+station.data$Direction<-ifelse(sign(station.data$Flux)>=0,"Donator Station","Receiver Station")
+station.data$Flux<-abs(station.data$Flux)
 
-#Generate SpatialPoints objects for each trip
-coordinates(station.data)<-~LONGITUDE+LATITUDE
+usage_rank<-station.data %>% group_by(TERMINAL_NUMBER) %>% summarise(MF=max(abs(Flux)))
+usage_rank<-usage_rank[order(-usage_rank$MF),]
+pick.stations<-usage_rank$TERMINAL_NUMBER[1:300] #Pick the 150 most-used stations
+station.data<-filter(station.data,TERMINAL_NUMBER %in% pick.stations)
+rm(list=c("final.tallies","usage_rank","pick.stations"))
+register_google(key="AIzaSyBwv7PRw5AE4v0DDpP10991RYli2zraFxE")
 
-# ui <- fluidPage(
-#   leafletOutput("mymap"),
-#   p(),
-#   actionButton("recalc", "New points")
-# )
+DC_map<-qmap("dc",zoom=13,maptype='toner-lite', source="stamen")
 
-pts<-station.data@coords
-points <- eventReactive(input$recalc, {pts}, ignoreNULL = FALSE)
-
-renderLeaflet({leaflet() %>%addProviderTiles(providers$Stamen.TonerLite,
-                                             options = providerTileOptions(noWrap = TRUE)) %>%
-    addCircleMarkers(data = points(),radius=1)
-  })
-
-#shinyApp(ui, server)
+DC_map_stations<-DC_map+
+  geom_point(data=station.data,aes(x=LONGITUDE,y=LATITUDE,color=Direction,size=Flux,frame=Group))+
+  transition_states(Group)+
+  scale_size_continuous(range = c(1, 15))
 ```
 
+## Map
+<div class="centered">
+```{r,warnings=FALSE}
+suppressWarnings(animate(DC_map_stations, width = 1000, height = 1000,fps=5))
+```
