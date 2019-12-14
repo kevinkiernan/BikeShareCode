@@ -1,6 +1,9 @@
 ##bearings
+source("stationlocation.R")
 
-bikebearing <- function(bdata, round = TRUE, samestation = TRUE, output = c("vector", "plot"), facet_group = "NULL"){
+
+
+bikebearing <- function(bdata, round = TRUE, samestation = TRUE, output = c("vector", "plot"), facet_group = NULL){
   
   library(fossil)
   library(dplyr)
@@ -25,6 +28,8 @@ bikebearing <- function(bdata, round = TRUE, samestation = TRUE, output = c("vec
   #round to nearest int if specified
   if (round == TRUE) {
     bearings <- round(bearings,0)
+  } else {
+    
   }
   
   
@@ -33,18 +38,13 @@ bikebearing <- function(bdata, round = TRUE, samestation = TRUE, output = c("vec
     return(bearings)
   } 
   
-  ##returning plot
-  else if (output == "plot"){
+  ##returning plot with no group
+  else if (output == "plot" & is.null(facet_group)){
     
     library(ggplot2)
     
-    ##aggregate for plotting
-    
-    ##split if faceting chart 
-    
     ##no faceting
-    if (is.null(facet_group)){
-      plotdat <- cbind(b, bearings)
+    plotdat <- cbind(b, bearings)
       
       ##aggregate just on bearing count
       plotdat <- aggregate(Bike.number ~ bearings, plotdat, length)
@@ -57,7 +57,7 @@ bikebearing <- function(bdata, round = TRUE, samestation = TRUE, output = c("vec
       
       return(g) 
       
-    } else{
+    } else if (output == "plot" & !is.null(facet_group)){
       
       plotdat <- cbind(b, bearings)
       #build both sides of aggregation equation
@@ -70,16 +70,21 @@ bikebearing <- function(bdata, round = TRUE, samestation = TRUE, output = c("vec
       
       
       g <- ggplot(plotdat, aes_string(x = 'bearings', y = 'ride_count', group = facet_group)) +
-        geom_polygon() + coord_polar() + theme_bw() + scale_x_discrete(breaks = c(0, 90, 180, 270)) +
+        geom_polygon() + coord_polar() + theme_bw() + scale_x_continuous(breaks = c(0, 90, 180, 270)) +
         scale_y_continuous(labels = scales::comma)+
         labs(x = "", y = "Count of Rides") + facet_wrap(facet_group)
       
       return(g) 
       
     }
+  
+  else{
+    print("Can't facet vector")
+  }
    
     
-  }
-  
-  
 }
+
+bikebearing(add.rush.q(x), output ="plot", facet_group = "rush", samestation = FALSE)  
+  
+

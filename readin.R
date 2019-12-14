@@ -10,11 +10,14 @@ for (i in 1:length(list.files(path = './Data/Month Data'))){
   
 }
 
-
+##rds file of every ride combined
 saveRDS(dat,"allrides.rds")
 
+#readin all rides
 allrides <- readRDS('allrides.rds')
 
+
+set.seed(245)
 #sample 5 million rides 
 x <- allrides[sample(nrow(allrides), 5000000),]
 
