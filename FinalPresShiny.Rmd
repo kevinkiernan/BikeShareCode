@@ -1,0 +1,233 @@
+---
+title: "BikeShare Project"
+author: "Kevin Kiernan, Eric Christiansen, Ruijia Yang"
+output: 
+  flexdashboard::flex_dashboard:
+    storyboard: true
+    social: menu
+    source: embed
+runtime: shiny
+---
+
+```{r setup, include=FALSE}
+library(flexdashboard)
+library(ggplot2)
+library(shiny)
+library(dplyr)
+library(tidyr)
+library(leaflet)
+library(geosphere)
+library(sp)
+library(ggmap)
+library(gganimate)
+require(gridExtra)
+library(plotly)
+
+library(RColorBrewer)
+cols <- brewer.pal(8, "Set2")
+```
+
+### Ridership varies wildly by time of year. People do not ride BikeShare in the winter, suggesting it may be a good-weather substitute for other services, such as buses.
+```{r}
+load("RidershipData.rds")
+# #monthly_counts_duration<-monthly_counts
+# #total_counts_duration<-total_counts
+# 
+# #mode_bin_duration<-which(total_counts_duration$total_counts==max(total_counts_duration$total_counts))
+# #median_bin_duration<-mean(monthly_counts_duration$Duration.Median)
+# ridership_long<-gather(ridership,'Member.rides','Casual.rides',key=Type,value=Count)
+# #Histogram for duration
+# ridership.plot<-ggplot(ridership_long,aes(x=Date,y=Count,fill=Type))+
+#   geom_area()+
+#   theme_light()
+# 
+# renderPlot(ridership.plot,width=1000,height=500)
+
+p <- plot_ly(ridership, x = ~Date,y =~Member.rides, name = 'Member Rides', type = 'scatter', mode = 'none', stackgroup = 'one', fillcolor = cols[3]) %>%
+  add_trace(y = ~Casual.rides, name = "Casual",fillcolor = cols[1]) %>%
+  layout(
+    title = "Total Ridership",
+    
+    xaxis = list(
+      rangeselector = list(
+        buttons = list(
+          list(
+            count = 1,
+            label = "1 mo",
+            step = "month",
+            stepmode = "backward"),
+          list(
+            count = 6,
+            label = "6 mo",
+            step = "moth",
+            stepmode = "backward"),
+          list(
+            count = 1,
+            label = "1 yr",
+            step = "year",
+            stepmode = "backward"),
+          list(
+            count = 3,
+            label = "3 yr",
+            step = "year",
+            stepmode = "backward"),
+          list(step = "all"))),
+      
+      rangeslider = list(type = "date")),
+    
+    yaxis = list(title = "Rides")) %>%
+  layout(autosize = T)
+p
+```
+
+### Most people use BikeShare for short trips: about 5 minutes or 1/2 mile.
+
+```{r}
+fig_height=300
+load("TripDurationData.rds")
+monthly_counts_duration<-monthly_counts
+total_counts_duration<-total_counts
+
+mode_bin_duration<-which(total_counts_duration$total_counts==max(total_counts_duration$total_counts))
+median_bin_duration<-mean(monthly_counts_duration$Duration.Median)
+
+#Histogram for duration
+full.duration.hist<-ggplot(total_counts_duration,aes(x=bins,y=total_counts/1000000))+
+  geom_bar(stat='identity',color="black",fill=cols[3])+
+  geom_vline(xintercept=mode_bin_duration, linetype="dotted", color="black", size=0.75)+
+  geom_vline(xintercept=median_bin_duration, linetype="dotted", color="black", size=0.75)+
+  annotate(geom="text", x=5, y=2.5, label="Modal Ride= 5-6 Minutes",color="black",hjust=-0.01)+
+  annotate(geom="text", x=11, y=1.75, label="Median Ride= 11 Minutes",color="black",hjust=-0.01)+
+  labs(y="Rides in Millions",
+       x="Ride Duration in Minutes")+
+  ylim(0,3)+
+  theme_minimal()
+#renderPlot(full.duration.hist,height = fig_height)
+
+load("TripDistanceData.rds")
+monthly_counts_distance<-monthly_counts
+total_counts_distance<-total_counts
+
+mode_bin_distance<-which(total_counts_distance$total_counts==max(total_counts_distance$total_counts))
+median_bin_distance<-mean(monthly_counts_distance$Distance.Median)
+
+#Histogram for Distance
+full.distance.hist<-ggplot(total_counts_distance,aes(x=bins,y=total_counts/1000000))+
+  geom_bar(stat='identity',color="black",fill=cols[3])+
+  geom_vline(xintercept=total_counts_distance$bins[mode_bin_distance], linetype="dotted", color="black", size=0.75)+
+  geom_vline(xintercept=median_bin_distance, linetype="dotted", color="black", size=0.75)+
+  annotate(geom="text", x=total_counts_distance$bins[mode_bin_distance], 
+           y=6, label="Modal Ride= 1/2 Mile",color="black",hjust=-0.01)+
+  annotate(geom="text", x=median_bin_distance, 
+           y=5, label="Median Ride=3/4 Mile",color="black",hjust=-0.01)+
+  labs(y="Rides in Millions",
+       x="Ride Length in Miles")+
+  xlim(-0.25,5)+
+  ylim(0,7)+
+  theme_minimal()
+
+#verticalLayout(full.distance.hist,full.duration.hist)
+#renderPlot(full.duration.hist,height = fig_height)
+#renderPlot(full.distance.hist, height = fig_height)
+grid.arrange(full.duration.hist, full.distance.hist, ncol = 1)
+```
+
+### Casual riders ride the almost as fast as members during the morning rush--but not during the middle of the day
+```{r}
+load("faceted_speed_plot.rds")
+renderPlot(speeds.rushtime)
+```
+
+### The most common routes vary by time of day. Transit hubs are the most important stations at the beginning and end of the workday, while the National Mall emerges as a key area around midday.
+![Eric's traffic chart](RoutesSpeeds.png)
+
+### Trip Direction Throughout the Day
+
+```{r}
+# load("TripHeadingData.rds")
+# monthly_counts_heading<-monthly_counts
+# total_counts_heading<-total_counts
+# 
+# #Histogram for heading
+# full.heading.hist<-ggplot(total_counts_heading,aes(x=bins,y=total_counts))+
+#   geom_bar(stat='identity',color="blue",fill="light blue")+
+#   labs(subtitle="Rideshare Data from 2010-2019",
+#        y="Count of Total Trips",
+#        x="Trip Heading")+
+#   xlim(0,360)+
+#   ylim(0,150000)+
+#   coord_polar()+
+#   theme_light()
+# 
+# renderPlot(full.heading.hist,width=650,height=650)
+
+load("tripbearings.rds")
+library(gganimate)
+library(dplyr)
+plotdat$Group<-as.POSIXct(plotdat$Int,format="%H:%M")
+
+p<-ggplot(plotdat, aes(x = bearings, y = ride_count))+
+  geom_bar(stat='identity',color=cols[1],fill=cols[1])+
+  scale_x_continuous("Trip Bearing",breaks=seq(0,315,45))+
+  coord_polar()+
+  theme_minimal()
+
+anim<-p+transition_manual(Group)+
+  labs(title = 'Time: {current_frame}')
+animate(anim, nframes = 144)
+```
+
+***
+
+Notice how most trips in the morning are Southeast-bound. 
+
+In the afternoon, the pattern reverses and most trips are to the Northeast. The reason for this becomes clear when we look at the donating/receiving stations.
+
+### Giving and Receiving Stations Throughout the Day
+
+```{r}
+r_colors <- rgb(t(col2rgb(colors()) / 255))
+names(r_colors) <- colors()
+
+overall_wd<-getwd()
+station.path<-paste0(overall_wd,"/Capital_Bike_Share_Locations.csv")
+station.data<-read.csv(file=station.path)
+station.data$TERMINAL_NUMBER<-as.factor(station.data$TERMINAL_NUMBER)
+load("tallies.rds")
+final.tallies$Station.ID<-as.factor(final.tallies$Station.ID)
+station.data<-station.data %>% merge(final.tallies,by.x="TERMINAL_NUMBER",by.y="Station.ID") %>%
+  select(TERMINAL_NUMBER,Group,LATITUDE,LONGITUDE,Total.Arrivals,Total.Departures,Flux,Total.Usage)
+station.data$Group<-as.POSIXct(station.data$Group,format="%H:%M")
+station.data$Direction<-ifelse(sign(station.data$Flux)>=0,"Receiver Station","Donator Station")
+station.data$Flux<-abs(station.data$Flux)
+
+usage_rank<-station.data %>% group_by(TERMINAL_NUMBER) %>% summarise(MF=max(abs(Flux)))
+usage_rank<-usage_rank[order(-usage_rank$MF),]
+pick.stations<-usage_rank$TERMINAL_NUMBER[1:300] #Pick the 150 most-used stations
+station.data<-filter(station.data,TERMINAL_NUMBER %in% pick.stations)
+rm(list=c("final.tallies","usage_rank","pick.stations"))
+register_google(key="AIzaSyBwv7PRw5AE4v0DDpP10991RYli2zraFxE")
+
+DC_map<-suppressWarnings(qmap("dc",zoom=13,maptype='toner-lite', source="stamen"))
+
+DC_map_stations<-suppressWarnings(DC_map+
+  geom_point(data=station.data,aes(x=LONGITUDE,y=LATITUDE,color=Direction,size=Flux,frame=Group))+
+  transition_manual(Group)+
+    theme(plot.title = element_text(size = 24, face = "bold"),
+          legend.title=element_text(size = 24, face = "bold"),
+          legend.text=element_text(size = 24, face = "bold"))+
+    guides(shape = guide_legend(override.aes = list(size = 500)))+
+    labs(title = 'Time: {current_frame}')+
+    scale_size_continuous(range = c(1, 15))
+)
+
+suppressWarnings(animate(DC_map_stations, width = 1300, height = 1300, nframes=144, fps=5))
+```
+
+***
+
+This animation shows the reason for the daily pattern of Southwest-bound trips in the morning and Northeast-bound trips in the afternoon: the neighborhoods north of Massachusetts Avenue.
+
+These neighborhoods are relatively residential and are relatively poorly served by Metro. They donate bikes when people go to work, and receive bikes when people return home.
+
+Capital BikeShare therefore seems to serve two primary purposes: tourism, and last-mile commuting.
